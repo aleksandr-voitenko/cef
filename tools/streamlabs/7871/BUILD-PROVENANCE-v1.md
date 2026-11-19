@@ -4,7 +4,7 @@
 
 - CEF: `abc1ece6a66997894c4c953ed24937603fbd74b4` (`7871_obsproject`), binary version `150.25.31-7871_obsproject.3563+gabc1ece+chromium-150.0.7871.287`.
 - Chromium: `e7b998fb3cd79ff00dbc0067421dc6ec118892a8` (`150.0.7871.287`). Depot_tools: `f4fadaf6a5ba1bced9d3d9021060667b563bf583`.
-- Windows x64 `Release_GN_x64` built with `is_debug=false`, `is_official_build=false`, `symbol_level=1`, `proprietary_codecs=true`, `ffmpeg_branding="Chrome"`, `dcheck_always_on=false`, and `dcheck_is_configurable=false`. The generated `args.gn` is the source of truth.
+- Windows x64 `Release_GN_x64` built with VS 2022 and `is_debug=false`, `is_official_build=false`, `symbol_level=1`, `proprietary_codecs=true`, `ffmpeg_branding="Chrome"`, `dcheck_always_on=false`, and `dcheck_is_configurable=false`. The generated `args.gn` is the source of truth.
 - Chrome/win/x64 FFmpeg configuration enables H.264 and AAC decoders (`CONFIG_H264_DECODER=1`, `CONFIG_AAC_DECODER=1`).
 - The managed worker denies Windows pipes used by Python multiprocessing. Local source changes select existing sequential modes in Mojo and Blink under `CEF_MANAGED_HOST=1`; a local esbuild fallback and AppContainer ACL stamp bypass also permit the build. These are build-host accommodations, not runtime sandbox modifications.
 

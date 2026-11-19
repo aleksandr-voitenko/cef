@@ -8,6 +8,7 @@ param(
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 if ($PackageName -notmatch '^[A-Za-z0-9_-]+$') { throw 'PackageName must contain only letters, numbers, underscores, and hyphens.' }
+if ($env:VisualStudioVersion -ne '18.0') { throw 'Run packaging from a Visual Studio 2026 x64 developer prompt.' }
 $root = [IO.Path]::GetFullPath($WorkRoot)
 $src = Join-Path $root 'download/chromium/src'
 $out = Join-Path $src 'out/Release_GN_x64'

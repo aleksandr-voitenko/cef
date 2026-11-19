@@ -1,6 +1,6 @@
 # CEF 7871 Windows x64 build
 
-Builds the OBS Project CEF 7871 branch and packages a Release runtime with matching PDBs and a self-contained `/MT` wrapper. The source pins reproduce the local v1 build recorded in [BUILD-PROVENANCE-v1.md](BUILD-PROVENANCE-v1.md). A new build gets new hashes; do not reuse the recorded v1 hash.
+Builds the OBS Project CEF 7871 branch with VS 2026 and packages a Release runtime with matching PDBs and a self-contained `/MT` wrapper. The source pins match the earlier VS 2022 v1 build recorded in [BUILD-PROVENANCE-v1.md](BUILD-PROVENANCE-v1.md). A new build gets new hashes; do not reuse the recorded v1 hash.
 
 | Repository | Revision |
 | --- | --- |
@@ -8,17 +8,17 @@ Builds the OBS Project CEF 7871 branch and packages a Release runtime with match
 | Chromium `150.0.7871.287` | `e7b998fb3cd79ff00dbc0067421dc6ec118892a8` |
 | depot_tools | `f4fadaf6a5ba1bced9d3d9021060667b563bf583` |
 
-Use Windows x64, VS 2022 C++ tools, a suitable Windows SDK with `symchk.exe`, Git with long paths enabled, Python/depot_tools prerequisites, 7-Zip, and ample disk space. Install depot_tools at `<work>\depot_tools` and checkout its pin; clone CEF at `<work>\cef` and checkout its pin. The script syncs Chromium from the GitHub mirror and checks all three resulting HEADs. Set `VSDEVCMD` if VS is installed in a different edition/location, `CEF_JOBS` to cap parallel compilation, and `GIT_USR_BIN` if Git's Unix tools are not on `PATH`. The build and packaging scripts never change an existing pin themselves.
+Use Windows x64, VS 2026 C++ tools, a suitable Windows SDK with `symchk.exe`, Git with long paths enabled, Python/depot_tools prerequisites, 7-Zip, and ample disk space. Install depot_tools at `<work>\depot_tools` and checkout its pin; clone CEF at `<work>\cef` and checkout its pin. The script syncs Chromium from the GitHub mirror and checks all three resulting HEADs. Set `VSDEVCMD` if VS is installed in a different edition/location, `CEF_JOBS` to cap parallel compilation, and `GIT_USR_BIN` if Git's Unix tools are not on `PATH`. The build and packaging scripts never change an existing pin themselves.
 
 ```cmd
-set VSDEVCMD=C:\path\to\VS2022\Common7\Tools\VsDevCmd.bat
+set VSDEVCMD=C:\path\to\VS2026\Common7\Tools\VsDevCmd.bat
 set CEF_JOBS=8
 build-win-x64.cmd D:\cef-work
 ```
 
-The build runs `automate-git.py`, CEF's GN hook, and `autoninja` for `cefclient bootstrap bootstrapc` in `Release_GN_x64`. For an interrupted build, run `build-win-x64.cmd D:\cef-work --resume`. Generated GN args must include Release, `symbol_level=1`, `proprietary_codecs=true`, `ffmpeg_branding="Chrome"`, disabled Release DCHECKs, and x64; the packaging script checks `args.gn` before doing any work.
+The build runs `automate-git.py`, CEF's GN hook, and `autoninja` for `cefclient bootstrap bootstrapc` in `Release_GN_x64`. To switch an existing pinned checkout to VS 2026, run `build-win-x64.cmd D:\cef-work --reconfigure`; it regenerates GN files without syncing sources. For an interrupted build, run `build-win-x64.cmd D:\cef-work --resume`. Generated GN args must include Release, `symbol_level=1`, `proprietary_codecs=true`, `ffmpeg_branding="Chrome"`, disabled Release DCHECKs, and x64; the packaging script checks `args.gn` before doing any work.
 
-From a VS developer command prompt, package after a successful build:
+From a VS 2026 x64 developer command prompt, package after a successful build:
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File .\package-win-x64.ps1 -WorkRoot D:\cef-work -PackageName cef_binary_7871_windows_x64_v2
