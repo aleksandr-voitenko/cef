@@ -27,8 +27,8 @@
 
 Key payload hashes are in the CSV inventory. `Release/libcef.dll` is `6B754D9A2F35FC22AD3630AFCCD24A1AA1E23F6B07FC8C62BF94CE2A0543A255` (315453952 bytes) and `Release/libcef.dll.pdb` is `D9D34D0CD44558CF0ECCBB2B1B1DAB14C8C1769D78E078C5963C46655B877063` (2606276608 bytes).
 
-## Integration still required
+## Integration status
 
-- The artifact is ready for the user's S3 upload. Do not change OBS PR #797's Windows x64 dependency until the uploaded URL and SHA-256 are confirmed.
-- CEF M138+ requires the Windows bootstrap launch model for a sandboxed external host. The current Streamlabs `obs64.exe` still links the retired static `cef_sandbox.lib` contract. OBS browser and `obs-studio-node` host integration, signing/layout, and a sandboxed subprocess smoke test remain before claiming sandbox support in the merge.
-- The managed worker denies the named-pipe IPC used by CEF child processes. A normal sandboxed runtime smoke test was not possible here; archive, PE, and symbol checks passed.
+- The runtime and symbols archives are uploaded to `https://streamlabs-cef-dist.s3.us-west-2.amazonaws.com/`. The downloaded objects match the SHA-256 hashes above.
+- CEF M138+ requires the Windows bootstrap launch model for a sandboxed external host. Draft PRs [obs-studio #804](https://github.com/streamlabs/obs-studio/pull/804), [obs-browser #61](https://github.com/streamlabs/obs-browser/pull/61), and [obs-studio-node #1855](https://github.com/streamlabs/obs-studio-node/pull/1855) contain the consumer changes. OBS merge PR #797 remains untouched.
+- Installed layout, signing, and sandboxed browser/renderer/GPU subprocess behavior still need validation on a normal Windows host before the draft PRs are ready. The managed worker denies the named-pipe IPC used by CEF child processes; archive, PE, and symbol checks passed here.
