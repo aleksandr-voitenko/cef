@@ -21,5 +21,5 @@ The runtime ZIP contains 1,388 files, including `Release/libcef.dll`, its matchi
 
 ## Integration
 
-- Upload the runtime ZIP under its exact name to the configured S3 base URL, then set the draft OBS PR #804 Windows x64 revision to `2` and hash to the value above. Upload the symbols archive separately. PR #797 remains untouched.
+- The runtime ZIP is hosted at `https://streamlabs-cef-dist.s3.us-west-2.amazonaws.com/cef_binary_7871_windows_x64_v2.zip`; the symbols archive is hosted at `https://streamlabs-cef-dist.s3.us-west-2.amazonaws.com/cef_binary_7871_windows_x64_v2_symbols.7z`. Both uploaded objects were streamed in full and their SHA-256 hashes match the local files above. Draft OBS PR #804 selects Windows x64 revision `2` and its runtime hash. PR #797 remains untouched.
 - The VS 2026 package has not completed an installed browser/renderer/GPU sandbox smoke test or signing validation. Keep the consumer PRs in draft until those checks pass.
