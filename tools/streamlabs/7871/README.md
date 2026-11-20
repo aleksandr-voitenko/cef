@@ -18,12 +18,14 @@ build-win-x64.cmd D:\cef-work
 
 The build runs `automate-git.py`, CEF's GN hook, and `autoninja` for `cefclient bootstrap bootstrapc` in `Release_GN_x64`. To switch an existing pinned checkout to VS 2026, run `build-win-x64.cmd D:\cef-work --reconfigure`; it regenerates GN files without syncing sources. For an interrupted build, run `build-win-x64.cmd D:\cef-work --resume`. Generated GN args must include Release, `symbol_level=1`, `proprietary_codecs=true`, `ffmpeg_branding="Chrome"`, disabled Release DCHECKs, and x64; the packaging script checks `args.gn` before doing any work.
 
-From a VS 2026 x64 developer command prompt with PowerShell 7, package after a successful build. OBS derives the runtime archive name from `cef_binary_VERSION_windows_ARCH_vREVISION.zip`; set the preset's Windows x64 revision to `2` for the example below.
+From a VS 2026 x64 developer command prompt with PowerShell 7 and CMake 4.2 or later, package the existing Release build. The default package name is `cef_binary_7871_windows_x64_v3`, corresponding to Windows x64 revision `3` in the OBS preset.
 
 ```powershell
-pwsh -NoProfile -File .\package-win-x64.ps1 -WorkRoot D:\cef-work -PackageName cef_binary_7871_windows_x64_v2
+pwsh -NoProfile -File .\package-win-x64.ps1 -WorkRoot D:\cef-work
 ```
 
-The packaging script calls `make_distrib.py`, reads the wrapper target's object list from GN's Ninja manifest, builds a normal COFF library with `lib.exe`, copies the distribution, embeds the Release PDBs, and creates a runtime ZIP, symbols 7z, and SHA-256 CSV inventory in `<work>\artifacts`. It checks required launch/runtime files, `/MT` wrapper compilation, normal archive format and member count, binary/PDB identity with `symchk.exe`, archive integrity and file count. Pass `-Symchk` with a full path if the SDK tool is not on `PATH`. Outputs must have a fresh package name; the script stops if any output path already exists.
+After `make_distrib.py`, the packaging script builds the distribution's `libcef_dll_wrapper` CMake target with MSVC, the Microsoft C++ standard library, `/MT`, and `/Zi`. It links a consumer that passes a `std::vector` across the wrapper API, exercising the same library boundary as obs-browser. The runtime ZIP includes both `libcef_dll_wrapper.lib` and its compiler PDB in `build/libcef_dll_wrapper/Release/`. The nine runtime PDBs are checked against their binaries with `symchk.exe` and included in the symbols 7z and the runtime ZIP's `Release/` directory.
+
+The runtime ZIP, symbols 7z, and SHA-256 CSV inventory are written to `<work>\artifacts`. Pass `-Symchk` with a full path if the SDK tool is not on `PATH`. Use a fresh package name for each build.
 
 The original local build needed host-specific accommodations for denied Python multiprocessing pipes, esbuild execution, AppContainer ACL stamping, and depot_tools vpython storage. They are deliberately not carried as patches: the esbuild and ACL changes were local workarounds without a portable safety proof. On a similarly restricted host, resolve and review those issues separately before building. A sandboxed CEF child-process smoke test also needs a normal Windows host and the M138+ bootstrap integration in the consuming application; archive checks alone do not establish runtime sandbox support.
