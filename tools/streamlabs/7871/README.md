@@ -1,6 +1,6 @@
 # CEF 7871 Windows x64 build
 
-Builds the OBS Project CEF 7871 branch with VS 2026 and packages a Release runtime with matching PDBs and a self-contained `/MT` wrapper. The source pins match the earlier VS 2022 v1 build recorded in [BUILD-PROVENANCE-v1.md](BUILD-PROVENANCE-v1.md). A new build gets new hashes; do not reuse the recorded v1 hash.
+Builds the OBS Project CEF 7871 branch with VS 2026 and packages a Release runtime with matching PDBs and a self-contained `/MT` wrapper. The source pins match the earlier VS 2022 [v1 build](BUILD-PROVENANCE-v1.md); the completed VS 2026 package is recorded in [v2 provenance](BUILD-PROVENANCE-v2.md). A new build gets new hashes; do not reuse a recorded artifact hash.
 
 | Repository | Revision |
 | --- | --- |
@@ -18,10 +18,10 @@ build-win-x64.cmd D:\cef-work
 
 The build runs `automate-git.py`, CEF's GN hook, and `autoninja` for `cefclient bootstrap bootstrapc` in `Release_GN_x64`. To switch an existing pinned checkout to VS 2026, run `build-win-x64.cmd D:\cef-work --reconfigure`; it regenerates GN files without syncing sources. For an interrupted build, run `build-win-x64.cmd D:\cef-work --resume`. Generated GN args must include Release, `symbol_level=1`, `proprietary_codecs=true`, `ffmpeg_branding="Chrome"`, disabled Release DCHECKs, and x64; the packaging script checks `args.gn` before doing any work.
 
-From a VS 2026 x64 developer command prompt, package after a successful build:
+From a VS 2026 x64 developer command prompt with PowerShell 7, package after a successful build. OBS derives the runtime archive name from `cef_binary_VERSION_windows_ARCH_vREVISION.zip`; set the preset's Windows x64 revision to `2` for the example below.
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File .\package-win-x64.ps1 -WorkRoot D:\cef-work -PackageName cef_binary_7871_windows_x64_v2
+pwsh -NoProfile -File .\package-win-x64.ps1 -WorkRoot D:\cef-work -PackageName cef_binary_7871_windows_x64_v2
 ```
 
 The packaging script calls `make_distrib.py`, reads the wrapper target's object list from GN's Ninja manifest, builds a normal COFF library with `lib.exe`, copies the distribution, embeds the Release PDBs, and creates a runtime ZIP, symbols 7z, and SHA-256 CSV inventory in `<work>\artifacts`. It checks required launch/runtime files, `/MT` wrapper compilation, normal archive format and member count, binary/PDB identity with `symchk.exe`, archive integrity and file count. Pass `-Symchk` with a full path if the SDK tool is not on `PATH`. Outputs must have a fresh package name; the script stops if any output path already exists.

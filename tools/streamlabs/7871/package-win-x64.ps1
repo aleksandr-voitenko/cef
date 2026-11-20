@@ -7,7 +7,8 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
-if ($PackageName -notmatch '^[A-Za-z0-9_-]+$') { throw 'PackageName must contain only letters, numbers, underscores, and hyphens.' }
+if ($PackageName -notmatch '^cef_binary_7871_windows_x64_v[1-9][0-9]*$') { throw 'PackageName must match OBS naming: cef_binary_7871_windows_x64_vN.' }
+if ($PSVersionTable.PSVersion.Major -lt 7) { throw 'Run packaging with PowerShell 7 (pwsh).' }
 if ($env:VisualStudioVersion -ne '18.0') { throw 'Run packaging from a Visual Studio 2026 x64 developer prompt.' }
 $root = [IO.Path]::GetFullPath($WorkRoot)
 $src = Join-Path $root 'download/chromium/src'
