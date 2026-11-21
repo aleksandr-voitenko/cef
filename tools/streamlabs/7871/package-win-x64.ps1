@@ -1,6 +1,6 @@
 param(
   [Parameter(Mandatory)][string]$WorkRoot,
-  [string]$PackageName = 'cef_binary_7871_windows_x64_v1',
+  [string]$PackageName = 'cef_binary_7871_windows_x64_v3',
   [string]$SevenZip = '7z',
   [string]$LibExe = 'lib.exe',
   [string]$Symchk = 'symchk.exe'
@@ -17,6 +17,7 @@ $cef = Join-Path $src 'cef'
 $stageRoot = Join-Path $root 'staging'
 $stage = Join-Path $stageRoot $PackageName
 $symbols = Join-Path $stageRoot "${PackageName}_release_symbols"
+$wrapperBuild = Join-Path $stageRoot "${PackageName}_wrapper_build"
 $package = Join-Path (Join-Path $root 'package') $PackageName
 $artifacts = Join-Path $root 'artifacts'
 $zip = Join-Path $artifacts "$PackageName.zip"
@@ -27,11 +28,10 @@ function Run([string]$file, [string[]]$arguments) {
   & $file @arguments
   if ($LASTEXITCODE -ne 0) { throw "$file failed with exit code $LASTEXITCODE" }
 }
-foreach ($path in @($stage, $symbols, $package, $zip, $symbols7z, $inventory)) {
+foreach ($path in @($stage, $symbols, $wrapperBuild, $package, $zip, $symbols7z, $inventory)) {
   if (Test-Path -LiteralPath $path) { throw "Output already exists: $path (use a new PackageName or move it aside)" }
 }
 Require-File (Join-Path $cef 'tools/make_distrib.py')
-Require-File (Join-Path $out 'obj/cef/libcef_dll_wrapper.ninja')
 Require-File (Join-Path $out 'args.gn')
 $gnArgs = Get-Content -LiteralPath (Join-Path $out 'args.gn') -Raw
 foreach ($setting in @('is_debug=false','is_official_build=false','symbol_level=1','proprietary_codecs=true','ffmpeg_branding="Chrome"','dcheck_always_on=false','dcheck_is_configurable=false','target_cpu="x64"')) {
@@ -54,32 +54,18 @@ finally { Pop-Location }
 if (-not (Test-Path -LiteralPath $stage -PathType Container)) { throw 'make_distrib did not create the distribution' }
 if (-not (Test-Path -LiteralPath $symbols -PathType Container)) { throw 'make_distrib did not create Release symbols' }
 
-# The GN archive uses /llvmlibthin. Rebuild a self-contained archive from its exact target object list.
-$manifest = Get-Content -LiteralPath (Join-Path $out 'obj/cef/libcef_dll_wrapper.ninja')
-if (-not @($manifest | Where-Object { $_ -match '^cflags = .* /MT(?: |$)' })) { throw 'GN wrapper target does not compile with /MT' }
-$target = @($manifest | Where-Object { $_ -match '^build obj/cef/libcef_dll_wrapper\.lib: alink ' })
-if ($target.Count -ne 1) { throw 'Expected exactly one GN wrapper archive target' }
-$objectPart = (($target[0] -split '\s+\|\s+',2)[0] -replace '^build obj/cef/libcef_dll_wrapper\.lib: alink ','')
-$objects = @($objectPart -split '\s+' | Where-Object { $_ -match '^obj/cef/libcef_dll_wrapper/.+\.obj$' })
-if ($objects.Count -lt 100 -or $objects.Count -ne @($objects | Select-Object -Unique).Count) { throw "Unexpected wrapper object list: $($objects.Count)" }
-foreach ($object in $objects) { Require-File (Join-Path $out $object) }
+Run cmake @('-S', (Join-Path $PSScriptRoot 'wrapper'), '-B', $wrapperBuild,
+            '-G', 'Visual Studio 18 2026', '-A', 'x64', '-T', 'v145', "-DCEF_ROOT:PATH=$stage",
+            '-DCEF_RUNTIME_LIBRARY_FLAG:STRING=/MT', '-DCEF_DEBUG_INFO_FLAG:STRING=/Zi')
+Run cmake @('--build', $wrapperBuild, '--config', 'Release', '--target', 'check-wrapper')
 $wrapperDir = Join-Path $package 'build/libcef_dll_wrapper/Release'
 New-Item -ItemType Directory -Path $wrapperDir -Force | Out-Null
-$wrapper = Join-Path $wrapperDir 'libcef_dll_wrapper.lib'
-$response = Join-Path $package 'wrapper-objects.rsp'
-try {
-  [IO.File]::WriteAllLines($response, $objects, [Text.Encoding]::ASCII)
-  Push-Location $out
-  try { Run $LibExe @('/NOLOGO',"/OUT:$wrapper","@$response") }
-  finally { Pop-Location }
-} finally { Remove-Item -LiteralPath $response -ErrorAction SilentlyContinue }
-Require-File $wrapper
-$header = New-Object byte[] 8
-$stream = [IO.File]::OpenRead($wrapper)
-try { [void]$stream.Read($header,0,8) } finally { $stream.Dispose() }
-if ([Text.Encoding]::ASCII.GetString($header) -ne "!<arch>`n") { throw 'Wrapper is not a normal COFF archive' }
-$members = @(& $LibExe /NOLOGO /LIST $wrapper)
-if ($LASTEXITCODE -ne 0 -or $members.Count -ne $objects.Count) { throw 'Wrapper archive member count differs from GN manifest' }
+foreach ($name in @('libcef_dll_wrapper.lib', 'libcef_dll_wrapper.pdb')) {
+  $file = Join-Path $wrapperBuild "libcef_dll_wrapper/Release/$name"
+  Require-File $file
+  Copy-Item -LiteralPath $file -Destination $wrapperDir
+}
+Run $LibExe @('/NOLOGO', '/LIST', (Join-Path $wrapperDir 'libcef_dll_wrapper.lib')) | Out-Null
 
 & robocopy $stage $package /E /XD (Join-Path $stage 'build') /NFL /NDL /NJH /NJS /NP | Out-Null
 if ($LASTEXITCODE -ge 8) { throw "robocopy failed with exit code $LASTEXITCODE" }
